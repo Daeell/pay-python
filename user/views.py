@@ -1,34 +1,32 @@
 from django.shortcuts import render
-import json
-
 from .models import User
 from django.views import View
 from django.http import JsonResponse
-
+from .serializers import UserSerializer
+from rest_framework.parsers import JSONParser
+from rest_framework.views import APIView
+from rest_framework.response import Response
 
 # Create your views here.
-class ResgisterView(View):
+
+class CreateUserView(View):
     def post(self, request):
-        data = json.loads(request.body)
+        data = JSONParser().parse(request)
+        serializer = UserSerializer(data=data)
 
-        email = data.get('email')
-        password = data.get('password')
+        if serializer.is_valid():
+            user = serializer.save()
+            user.set_password(user.password)
+            user.save()
+            return JsonResponse(serializer.data, status=201)
 
-        if not email or not password:
-            return JsonResponse({'error' : '이메일과 비밀번호를 입력해주세요'}, status=400)
+        return JsonResponse(serializer.errors, status=400)
         
-        if User.objects.filter(email=email).exists():
-            return JsonResponse({'error' : '이미 등록된 이메일입니다.'}, status=400)
-
-        User.objects.create_user(
-            email = email,
-            password = password
-        )
-        return JsonResponse({'message' : '회원가입 성공'}, status=201)
-
+class UserListView(APIView):
     def get(self, response):
-        User_data = User.objects.values()
-        return JsonResponse({'유저정보' : list(User_data)}, status=200)
+        users = User.objects.all()
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data)
 
 # import jwt
 # from django.conf import settings
