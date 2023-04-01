@@ -1,39 +1,54 @@
 from django.shortcuts import render
 from .models import User
-from django.views import View
-from django.http import JsonResponse
-from .serializers import UserSerializer
-from rest_framework.parsers import JSONParser
+from .serializers import UserSerializer, LoginSerializer
+from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import IsAuthenticated
 
-# Create your views here.
-
-class CreateUserView(View):
+class CreateUserView(APIView):
     def post(self, request):
-        data = JSONParser().parse(request)
-        serializer = UserSerializer(data=data)
+        serializer = UserSerializer(data=request.data)
 
         if serializer.is_valid():
             user = serializer.save()
             user.set_password(user.password)
             user.save()
-            return JsonResponse(serializer.data, status=201)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        return JsonResponse(serializer.errors, status=400)
-        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 class UserListView(APIView):
-    def get(self, response):
+
+    def get(self, request):
         users = User.objects.all()
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
 
-# import jwt
-# from django.conf import settings
-# from datetime import datetime
+class LoginView(APIView):
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data)
 
-        # payload = {
-        #     'user_id': user.id,
-        #     'exp' : datetime.utcnow() + settings.JWT_EXPIRATION_DELTA
-        # }
-        # token = jwt.encode(payload, settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
+        if serializer.is_valid():
+            user = serializer.validated_data['user']
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'access_token': str(refresh.access_token),
+                'refresh_token': str(refresh)
+            }, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            refresh_token = request.data['refresh']
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            return Response({'message':'로그아웃 완료'},status=status.HTTP_205_RESET_CONTENT)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
