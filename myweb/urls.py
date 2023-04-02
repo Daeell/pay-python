@@ -16,7 +16,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from user.views import CreateUserView, UserListView, LoginView, LogoutView
-from personalexpense.views import ExpenseCreateView, ExpenseUpdateDeleteView,ExpenseListView, ExpenseDetailView
+from personalexpense.views import ExpenseCreateView, ExpenseUpdateDeleteView,ExpenseListView, ExpenseDetailView, ExpenseCloneView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -28,4 +28,5 @@ urlpatterns = [
     path('expenses/<int:pk>/', ExpenseUpdateDeleteView.as_view(), name='expense-update-delete'),
     path('expenses/', ExpenseListView.as_view(), name='expense-list'),
     path('expenses/detail/<int:pk>/', ExpenseDetailView.as_view(), name='expense-detail'),
+    path('expenses/clone/<int:pk>/', ExpenseCloneView.as_view(), name='expense-clone')
 ]
