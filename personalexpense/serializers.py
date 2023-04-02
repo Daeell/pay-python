@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import PersonalExpense
+from .models import PersonalExpense, ShortURL
 
 class PersonalExpenseSerializer(serializers.ModelSerializer):
     class Meta:
@@ -12,3 +12,7 @@ class PersonalExpenseSerializer(serializers.ModelSerializer):
             validated_data['user'] = user
             return PersonalExpense.objects.create(**validated_data)
 
+class ShortURLSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ShortURL
+        fields = ['short_url', 'expires_at']

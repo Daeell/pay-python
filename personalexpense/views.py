@@ -3,8 +3,11 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from .serializers import PersonalExpenseSerializer
-from .models import PersonalExpense
+from .serializers import PersonalExpenseSerializer, ShortURLSerializer
+from .models import PersonalExpense, ShortURL
+from django.utils import timezone
+from datetime import timedelta
+
 
 class ExpenseCreateView(APIView):
     permission_classes = [IsAuthenticated]
@@ -90,3 +93,40 @@ class ExpenseCloneView(APIView):
         )
         serializer = PersonalExpenseSerializer(cloned_expense)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ExpenseShortURLView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, pk, user):
+        try:
+            return PersonalExpense.objects.get(pk=pk, user=user)
+        except PersonalExpense.DoesNotExist:
+            return None
+
+    def post(self, request, pk):
+        expense = self.get_object(pk, request.user)
+        if expense is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        expires_at = timezone.now() + timedelta(days=1)
+        short_url = ShortURL.objects.create(expense=expense, expires_at=expires_at)
+        short_url.generate_short_url()
+        short_url.save()
+
+        serializer = ShortURLSerializer(short_url)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+class ExpenseShortURLDetailView(APIView):
+    def get(self, request, short_url):
+        try:
+            short_url_instance = ShortURL.objects.get(short_url=short_url)
+        except ShortURL.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        if short_url_instance.expires_at < timezone.now():
+            return Response(status=status.HTTP_410_GONE)
+
+        expense = short_url_instance.expense
+        serializer = PersonalExpenseSerializer(expense)
+        return Response(serializer.data)
