@@ -1,4 +1,4 @@
-# pay-here
+# pay-python
 <img width="1057" alt="image" src="https://user-images.githubusercontent.com/104256143/229357531-0766adbb-2b17-4ddc-add0-49e1f94370f2.png">
 
 ## [문서 링크 - 노션](https://www.notion.so/16f80bd73b7c44e18849d9b9c6dae003?pvs=4)
