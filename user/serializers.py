@@ -8,7 +8,13 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['email', 'password', 'created_at', 'updated_at', 'is_active', 'is_staff']
         extra_kwargs = {'password': {'write_only': True}}
-
+        
+    def create(self, validated_data):
+        password = validated_data.pop('password')
+        user = User(**validated_data)
+        user.set_password(password)
+        user.save()
+        return user
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
